@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>eagaleAI</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #04365f;
+      --bg: #ffffff;
+      --card-bg: #ffffff;
+      --border: #ddd;
+      --text: #222;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: url('static/ui/backround.png') no-repeat center center fixed;
+      background-size: cover;
+      color: var(--text);
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 1rem 2rem;
+    }
+
+    .logo-title {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .logo {
+      height: 85px;
+      width: auto;
+    }
+
+    .title {
+      font-size: 1.5rem;
+      font-weight: 500;
+    }
+
+    .logo-center {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem 0;
+    }
+
+    main {
+      padding: 2rem;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    h2 {
+      margin-top: 3rem;
+      font-weight: 500;
+      color: var(--primary);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      overflow: hidden;
+      transition: transform 0.2s ease;
+      margin-bottom: 2rem;
+    }
+
+    .card:hover {
+      transform: scale(1.02);
+    }
+
+    .actions {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem;
+      /* Buttons am unteren Rand ausrichten */
+      align-items: flex-end;
+    }
+
+    .actions form {
+      flex: 1;
+    }
+
+    .actions input[type="file"] {
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+
+    .actions button {
+      width: 100%;
+      padding: 0.5rem 1rem;
+      border: none;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .upload-btn {
+      background-color: var(--primary);
+    }
+
+    .analyze-btn {
+      background-color: #e03e2d;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .card img {
+      width: 100%;
+      display: block;
+      cursor: pointer;
+    }
+
+    .info {
+      padding: 0.75rem;
+      font-size: 0.9rem;
+      color: #555;
+    }
+
+    #map {
+      height: 500px;
+      margin-top: 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.9);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal img {
+      width: 100vw;
+      height: 100vh;
+      object-fit: contain;
+    }
+
+    @media (max-width: 600px) {
+      .actions {
+        flex-direction: column;
+      }
+      .actions button {
+        font-size: 0.9rem;
+      }
+      .logo {
+        height: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-center">
+      <img src="static/ui/logo_crop.png" alt="Logo" class="logo">
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Image Upload & Analyse -->
+    <h2>Uploade images & Start analyse</h2>
+    <div class="card">
+      <div class="actions">
+        <!-- Upload-Form -->
+        <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+          <label for="file" style="display:block; margin-bottom:0.5rem;">Select Image (.jpg, .png)</label>
+          <input type="file" name="file" id="file" multiple required>
+          <button type="submit" class="upload-btn">Upload</button>
+        </form>
+        <!-- Analyse-Form führt jetzt /run-analysis aus -->
+        <form action="{{ url_for('run_analysis') }}" method="post">
+          <button type="submit" class="analyze-btn">Analyse</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Image-Galerie -->
+    <h2>Found {{ image_count }} images with abnormality</h2>
+    <div class="grid">
+      {% for img in images %}
+      <div class="card">
+        <img src="/images/{{ img.filename }}" alt="{{ img.filename }}" onclick="showImage('/images/{{ img.filename }}')">
+        <div class="info">
+          <div><strong>Position:</strong> {{ img.lat }}, {{ img.lon }}</div>
+          <div><strong>Zeit:</strong> {{ img.timestamp }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Map -->
+    <h2>Images on map</h2>
+    <div id="map"></div>
+
+
+
+    <!-- Send Mail -->
+    <h2>Export</h2>
+    <div style="margin-bottom: 2rem;">
+      <form onsubmit="openMail(event)">
+        <label for="recipient">Recipient E-Mail:</label>
+        <input type="email" id="recipient" name="recipient" required placeholder="rescue@team.org"
+               style="margin: 0.5rem 1rem; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; width: 250px;">
+        <button type="submit"
+                style="padding: 0.6rem 1.2rem; background-color: var(--primary); color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer;">
+          Open Mail App
+        </button>
+        <a href="/download-zip"
+           style="margin-left: 1rem; padding: 0.6rem 1.2rem; background-color: var(--primary); color: white; border: none; border-radius: 6px; font-size: 1rem; text-decoration: none;">
+          Download ZIP
+        </a>
+        <p style="font-size: 0.85rem; color: #555; margin-top:1rem;">
+          Note: The ZIP archive must be downloaded separately and attached in the mail program
+        </p>
+      </form>
+    </div>
+
+  </main>
+
+  <!-- Fullscreen Modal -->
+  <div class="modal" id="modal" onclick="hideImage()">
+    <img id="modalImg" src="">
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([47, 11], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap',
+    }).addTo(map);
+
+    const markers = [
+      {% for img in images if img.lat != "N/A" and img.lon != "N/A" %}
+      {
+        filename: "{{ img.filename }}",
+        lat: {{ img.lat }},
+        lon: {{ img.lon }},
+        timestamp: "{{ img.timestamp }}"
+      },
+      {% endfor %}
+    ];
+
+    markers.forEach(img => {
+      const marker = L.marker([img.lat, img.lon]).addTo(map);
+      marker.bindPopup(`<div style='font-size: 14px'><strong>${img.timestamp}</strong><br><img src="/images/${img.filename}" width="200"></div>`);
+    });
+
+    function showImage(src) {
+      document.getElementById('modalImg').src = src;
+      document.getElementById('modal').style.display = 'flex';
+    }
+    function hideImage() {
+      document.getElementById('modal').style.display = 'none';
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') hideImage(); });
+
+    function openMail(event) {
+      event.preventDefault();
+      const recipient = document.getElementById('recipient').value;
+      const subject = encodeURIComponent("Drone SAR Images");
+      const body = encodeURIComponent("Please find the attached ZIP file containing drone images with coordinates.");
+      window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
+    }
+  </script>
+
+</body>
+</html>

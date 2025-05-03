@@ -1,5 +1,5 @@
-datapath=/Users/wendizheng/Desktop/EagleAI/GLASS/datasets/mvtec
-augpath=/Users/wendizheng/Desktop/EagleAI/GLASS/datasets/dtd/images
+datapath=/Users/matthias/Documents/GitHub/Eagle_AI/GLASS/datasets/mvtec
+augpath=/Users/matthias/Documents/GitHub/Eagle_AI/GLASS/datasets/dtd/images
 classes=('thermal_image')
 flags=($(for class in "${classes[@]}"; do echo '-d '"${class}"; done))
 

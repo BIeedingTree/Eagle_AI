@@ -31,7 +31,7 @@ class MVTecDataset(torch.utils.data.Dataset):
     def __init__(
             self,
             source,
-            anomaly_source_path='/Users/wendizheng/Desktop/EagleAI/GLASS/datasets/dtd/images',
+            anomaly_source_path='/Users/matthias/Documents/GitHub/Eagle_AI/GLASS/datasets/dtd/images',
             dataset_name='mvtec',
             classname='thermal_image',
             resize=288,
