@@ -1,11 +1,11 @@
-datapath=/shared/ssd_30T/NO_WZ/DroneModel/GLASS/datasets/mvtec
-augpath=/shared/ssd_30T/NO_WZ/DroneModel/GLASS/datasets/dtd/images
+datapath=/Users/wendizheng/Desktop/EagleAI/GLASS/datasets/mvtec
+augpath=/Users/wendizheng/Desktop/EagleAI/GLASS/datasets/dtd/images
 classes=('thermal_image')
 flags=($(for class in "${classes[@]}"; do echo '-d '"${class}"; done))
 
 cd ..
 python main.py \
-    --gpu 0 \
+    --gpu -1 \
     --seed 0 \
     --test ckpt \
   net \

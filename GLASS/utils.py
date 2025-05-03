@@ -69,11 +69,12 @@ def set_torch_device(gpu_ids):
     """Returns correct torch.device.
 
     Args:
-        gpu_ids: [list] list of gpu ids. If empty, cpu is used.
+        gpu_ids: [list] list of gpu ids. If empty or -1, cpu is used.
     """
-    if len(gpu_ids):
-        return torch.device("cuda:{}".format(gpu_ids[0]))
-    return torch.device("cpu")
+    if not gpu_ids or gpu_ids[0] == -1:
+        return torch.device("cpu")
+    return torch.device(f"cuda:{gpu_ids[0]}")
+
 
 
 def fix_seeds(seed, with_torch=True, with_cuda=True):
